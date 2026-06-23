@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🦞 Clawbot Scalper</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f1a;color:#f1f5f9;font-family:'Inter',system-ui,sans-serif;padding:16px;min-height:100vh}
+.hdr{text-align:center;margin-bottom:18px}
+h1{font-size:24px;font-weight:800;background:linear-gradient(90deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr p{color:#6b7280;font-size:13px;margin-top:4px}
+.card{background:#111827;border-radius:12px;padding:14px;margin-bottom:13px;border:1px solid #1f2937}
+.card.warn{border-color:#f59e0b44}
+label{color:#6b7280;font-size:11px;font-weight:700;letter-spacing:1px;display:block;margin-bottom:5px;margin-top:10px}
+label:first-child{margin-top:0}
+input{width:100%;background:#0a0f1a;border:1px solid #374151;border-radius:8px;color:#f1f5f9;padding:9px 12px;font-size:13px;font-family:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.slbl{color:#6b7280;font-size:11px;font-weight:700;letter-spacing:1px;display:block;margin-bottom:10px}
+
+/* Signal light */
+.signal-box{background:#111827;border-radius:14px;padding:18px;margin-bottom:13px;border:2px solid #1f2937;text-align:center;transition:border-color .4s,background .4s}
+.signal-box.bull{border-color:#4ade8077;background:#0a1f12}
+.signal-box.bear{border-color:#ef444477;background:#1a0a0a}
+.signal-box.wait{border-color:#6b728044;background:#111827}
+.sig-icon{font-size:48px;line-height:1;margin-bottom:8px}
+.sig-title{font-size:22px;font-weight:800;margin-bottom:6px}
+.sig-sub{color:#9ca3af;font-size:13px;line-height:1.5}
+
+/* Ticker row */
+.tkr-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}
+.tkr{background:#111827;border:1.5px solid #1f2937;border-radius:10px;padding:11px;transition:border-color .3s}
+.tkr .sym{font-weight:800;font-size:14px}
+.tkr .px{font-size:18px;font-weight:700;margin:3px 0 2px}
+.tkr .ch{font-size:12px;font-weight:600}
+.tkr .lb{color:#6b7280;font-size:10px;font-weight:700}
+.vbar-bg{background:#1f2937;border-radius:4px;height:4px;overflow:hidden;margin-top:5px}
+.vbar-fill{height:100%;border-radius:4px;transition:width .5s,background .5s}
+
+/* Trade plan */
+.plan{background:#0a1a0a;border:1.5px solid #4ade8044;border-radius:12px;padding:14px;margin-bottom:13px;display:none}
+.plan.bear-plan{background:#1a0a0a;border-color:#ef444444}
+.plan-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1f2937}
+.plan-row:last-child{border-bottom:none}
+.plan-lbl{color:#6b7280;font-size:11px;font-weight:700;letter-spacing:.5px}
+.plan-val{font-size:14px;font-weight:700}
+.green{color:#4ade80}.red{color:#ef4444}.orange{color:#f97316}.blue{color:#60a5fa}.yellow{color:#fbbf24}
+
+/* Catalyst checklist */
+.checklist{background:#111827;border-radius:12px;padding:14px;margin-bottom:13px;border:1px solid #1f2937}
+.chk-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1f2937;cursor:pointer}
+.chk-item:last-child{border-bottom:none}
+.chk-item input[type=checkbox]{width:18px;height:18px;accent-color:#f97316;flex-shrink:0;cursor:pointer}
+.chk-label{font-size:13px;color:#e2e8f0;flex:1}
+.chk-sub{font-size:11px;color:#6b7280;margin-top:2px}
+.score-bar{background:#1f2937;border-radius:6px;height:8px;overflow:hidden;margin:10px 0 6px}
+.score-fill{height:100%;border-radius:6px;transition:width .4s,background .4s}
+.score-lbl{font-size:12px;font-weight:700;text-align:center}
+
+/* Alert log */
+.alog{background:#111827;border-radius:12px;padding:14px;margin-bottom:13px;border:1px solid #1f2937;max-height:180px;overflow-y:auto}
+.aitem{border-left:3px solid #f59e0b;padding:6px 10px;margin-bottom:6px;background:#0a0f1a;border-radius:0 6px 6px 0;font-size:12px;color:#e2e8f0}
+.aitem.ok{border-left-color:#4ade80}
+.aitem.bad{border-left-color:#ef4444}
+.ac{background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:6px}
+
+/* Chat */
+.chat{background:#111827;border-radius:12px;padding:14px;margin-bottom:13px;border:1px solid #1f2937}
+.msgs{min-height:80px;max-height:320px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.msg{padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6;max-width:93%}
+.mu{background:#1e3a5f;color:#bfdbfe;align-self:flex-end}
+.mb{background:#0f1a0a;color:#e2e8f0;align-self:flex-start;border:1px solid #f9731633;white-space:pre-wrap}
+.mb b{color:#f97316}
+.irow{display:flex;gap:8px}
+.irow textarea{flex:1;background:#0a0f1a;border:1px solid #374151;border-radius:8px;color:#f1f5f9;padding:10px 12px;font-size:13px;resize:none;height:46px;font-family:inherit}
+.btn{background:linear-gradient(90deg,#f97316,#ef4444);border:none;border-radius:8px;padding:10px 16px;color:#fff;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn:disabled{background:#1f2937;color:#6b7280;cursor:not-allowed}
+.bsm{background:#1f2937;border:1px solid #374151;border-radius:6px;padding:6px 10px;color:#9ca3af;font-size:11px;cursor:pointer}
+.bsm:hover{border-color:#f97316;color:#f97316}
+.btst{background:#1f2937;border:1px solid #4ade8044;border-radius:8px;padding:8px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}
+.bref{background:none;border:1px solid #374151;border-radius:6px;color:#6b7280;font-size:11px;padding:3px 8px;cursor:pointer;margin-left:auto}
+.bref:hover{color:#f97316;border-color:#f97316}
+.qq{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.srow{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dg{background:#4ade80;animation:pulse 2s infinite}
+.dy{background:#f59e0b;animation:pulse 1s infinite}
+.dr{background:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sp{display:inline-block;width:13px;height:13px;border:2px solid #374151;border-top-color:#f97316;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.flash{animation:fl 1s ease-out}
+@keyframes fl{0%{background:#f9731633}100%{background:transparent}}
+.hint{color:#4b5563;font-size:11px;margin-top:4px}
+
+.chart-section{background:#111827;border-radius:12px;padding:14px;margin-bottom:13px;border:1px solid #1f2937}
+.chart-tabs{display:flex;gap:4px;margin-bottom:12px;background:#0a0f1a;border-radius:8px;padding:3px}
+.ctab{flex:1;background:transparent;border:none;border-radius:6px;padding:7px 0;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.ctab.active{background:#1f2937;color:#f1f5f9}
+.chart-wrap{position:relative;height:280px;border-radius:8px;overflow:hidden}
+.chart-overlay{position:absolute;top:8px;left:10px;z-index:10;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.chart-price{font-size:18px;font-weight:800;color:#f1f5f9}
+.chart-chg{font-size:12px;font-weight:700}
+.chart-tf{display:flex;gap:4px;margin-bottom:8px}
+.tftab{background:#0a0f1a;border:1px solid #374151;border-radius:5px;padding:3px 9px;color:#6b7280;font-size:11px;font-weight:700;cursor:pointer}
+.tftab.active{border-color:#f97316;color:#f97316}
+.chart-loading{display:flex;align-items:center;justify-content:center;height:280px;color:#4b5563;font-size:13px}
+
+
+.ctag{background:#1f2937;border:1px solid #f9731633;border-radius:20px;color:#f97316;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;transition:all .2s}
+.ctag:hover,.ctag.active{background:#f9731622;border-color:#f97316;color:#fff}
+.nimp{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;display:inline-block;margin-top:3px}
+.nb{background:#4ade8022;color:#4ade80;border:1px solid #4ade8044}
+.nr{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+.nn{background:#6b728022;color:#9ca3af;border:1px solid #37415144}
+.nitem{border-left:2px solid #374151;padding:6px 10px;margin-bottom:7px;cursor:pointer;border-radius:0 6px 6px 0}
+.nitem:hover{border-left-color:#f97316;background:#f9731608}
+.nitem .nh{color:#e2e8f0;font-size:12px;line-height:1.4}
+.nitem .nm{color:#6b7280;font-size:10px;margin-top:2px}
+.eco-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1f2937}
+.eco-item:last-child{border-bottom:none}
+.eco-time{color:#f97316;font-size:11px;font-weight:700;min-width:55px}
+.eco-name{color:#e2e8f0;font-size:12px;flex:1}
+.eco-imp{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px}
+.eco-high{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+.eco-med{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+.eco-low{background:#6b728022;color:#9ca3af;border:1px solid #37415144}
+.sig-high{background:#ef444422;color:#ef4444;border:1px solid #ef444444;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;display:inline-block}
+.sig-med{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;display:inline-block}
+.sig-low{background:#6b728022;color:#9ca3af;border:1px solid #37415144;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;display:inline-block}
+
+.sep{border-top:1px solid #1f2937;margin:10px 0}
+.mrow{display:flex;align-items:center;gap:6px}
+.footer{text-align:center;color:#374151;font-size:11px;margin-top:20px;padding-bottom:20px}
+.pill{display:inline-block;border-radius:4px;font-size:10px;font-weight:700;padding:2px 7px;margin:2px}
+.pill-g{background:#4ade8022;color:#4ade80;border:1px solid #4ade8044}
+.pill-r{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+.pill-o{background:#f9731622;color:#f97316;border:1px solid #f9731644}
+.time-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tbadge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
+    <span style="font-size:26px">🦞</span><h1>CLAWBOT SCALPER</h1>
+  </div>
+  <p>Directional 0DTE scalps only · SPY · QQQ · Catalyst-driven</p>
+</div>
+
+<!-- Keys -->
+<div class="card warn">
+  <span class="slbl">🔑 KEYS — <span style="color:#4b5563;font-weight:400">run via <code style="background:#0a0f1a;padding:1px 5px;border-radius:3px">python3 -m http.server 8080</code> then open localhost:8080</span></span>
+  <label>ANTHROPIC KEY</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-..." oninput="saveKeys()"/>
+  <label>FINNHUB KEY <span style="color:#4b5563;font-weight:400">(finnhub.io — free)</span></label>
+  <input type="text" id="finnhubKey" placeholder="cq1abc..." oninput="saveKeys()"/>
+  <div class="sep"></div>
+  <label>EMAILJS PUBLIC KEY</label>
+  <input type="text" id="ejKey" placeholder="user_xxxx" oninput="saveKeys()"/>
+  <label>EMAILJS SERVICE ID</label>
+  <input type="text" id="ejSvc" placeholder="service_xxxx" oninput="saveKeys()"/>
+  <label>EMAILJS TEMPLATE ID</label>
+  <input type="text" id="ejTpl" placeholder="template_xxxx" oninput="saveKeys()"/>
+  <label>PHONE (AT&T)</label>
+  <input type="text" id="phone" value="3017894773" oninput="saveKeys()"/>
+  <button class="btst" onclick="sendTestSMS()">📱 Test SMS → 301-789-4773</button>
+</div>
+
+<!-- Manual Price Input -->
+<div class="card">
+  <span class="slbl">⌨️ LIVE PRICES <span style="color:#4b5563;font-weight:400">— auto-loads with Finnhub key, or enter manually</span></span>
+  <div class="row3">
+    <div><label>SPY</label><input type="number" id="m-spy" placeholder="548.20" step="0.01" oninput="manualUpdate()"/></div>
+    <div><label>QQQ</label><input type="number" id="m-qqq" placeholder="473.10" step="0.01" oninput="manualUpdate()"/></div>
+    <div><label>VIX</label><input type="number" id="m-vix" placeholder="17.5" step="0.1" oninput="manualUpdate()"/></div>
+    <div><label>SPY prev</label><input type="number" id="m-spy-p" placeholder="544.00" step="0.01" oninput="manualUpdate()"/></div>
+    <div><label>QQQ prev</label><input type="number" id="m-qqq-p" placeholder="470.00" step="0.01" oninput="manualUpdate()"/></div>
+    <div><label>VWAP (opt)</label><input type="number" id="m-vwap" placeholder="547.50" step="0.01" oninput="manualUpdate()"/></div>
+  </div>
+</div>
+
+<!-- Status -->
+<div class="srow">
+  <div class="dot dy" id="sdot"></div>
+  <span id="stxt" style="color:#9ca3af;font-size:12px">Initializing...</span>
+  <button class="bref" onclick="refreshAll()">↻ Refresh</button>
+</div>
+
+<!-- MAIN SIGNAL -->
+<div class="signal-box wait" id="sigBox">
+  <div class="sig-icon" id="sigIcon">⏳</div>
+  <div class="sig-title" id="sigTitle" style="color:#6b7280">WAITING FOR DATA</div>
+  <div class="sig-sub" id="sigSub">Enter prices or add Finnhub key to get scalp signal</div>
+</div>
+
+<!-- Trade Plan -->
+<div class="plan" id="tradePlan">
+  <div class="mrow" style="margin-bottom:10px">
+    <span class="slbl" style="margin-bottom:0" id="planTitle">📋 SCALP TRADE PLAN</span>
+  </div>
+  <div class="plan-row"><span class="plan-lbl">TICKER</span><span class="plan-val" id="p-ticker">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">DIRECTION</span><span class="plan-val" id="p-dir">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">CONTRACT</span><span class="plan-val" id="p-contract">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">ENTRY DELTA</span><span class="plan-val" id="p-delta">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">HOLD TIME</span><span class="plan-val orange" id="p-hold">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">PROFIT TARGET</span><span class="plan-val green" id="p-target">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">HARD STOP</span><span class="plan-val red" id="p-stop">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">EXIT IF FLAT BY</span><span class="plan-val yellow" id="p-flatby">--</span></div>
+  <div class="plan-row"><span class="plan-lbl">AVOID TRADING</span><span class="plan-val" id="p-avoid">--</span></div>
+</div>
+
+<!-- Tickers -->
+<div class="tkr-row">
+  <div class="tkr" id="c-SPY"><div class="lb">SPY</div><div class="px" id="p-spy" style="color:#4ade80">--</div><div class="ch" id="ch-spy">--</div></div>
+  <div class="tkr" id="c-QQQ"><div class="lb">QQQ</div><div class="px" id="p-qqq" style="color:#60a5fa">--</div><div class="ch" id="ch-qqq">--</div></div>
+  <div class="tkr" id="c-VIX"><div class="lb">VIX</div><div class="px" id="p-vix" style="color:#e879f9">--</div><div class="ch" id="ch-vix">--</div><div class="vbar-bg"><div class="vbar-fill" id="vbar" style="width:0%"></div></div></div>
+</div>
+
+<!-- Best Scalp Windows -->
+<div class="card">
+  <span class="slbl">🕐 BEST SCALP WINDOWS TODAY</span>
+  <div class="time-badges" id="timeBadges">
+    <span class="tbadge" style="color:#4ade80;border-color:#4ade8044;background:#4ade8011">9:35–10:00 AM ✅ Open Range</span>
+    <span class="tbadge" style="color:#f97316;border-color:#f9731644;background:#f9731611">10:00–10:30 AM ⚡ Reversal Zone</span>
+    <span class="tbadge" style="color:#6b7280;border-color:#37415144;background:#37415111">12:00–1:30 PM ❌ Lunchtime</span>
+    <span class="tbadge" style="color:#4ade80;border-color:#4ade8044;background:#4ade8011">3:00–4:00 PM ✅ Closing Drive</span>
+  </div>
+  <div id="windowStatus" style="color:#9ca3af;font-size:12px;margin-top:10px">--</div>
+</div>
+
+
+<!-- Charts -->
+<div class="chart-section">
+  <div class="mrow" style="margin-bottom:10px">
+    <span class="slbl" style="margin-bottom:0">📈 LIVE CHARTS — TradingView</span>
+    <span style="color:#4ade80;font-size:10px;font-weight:700">● REAL-TIME</span>
+  </div>
+  <div class="chart-tabs">
+    <button class="ctab active" onclick="switchTV('SPY',this)">SPY</button>
+    <button class="ctab" onclick="switchTV('QQQ',this)">QQQ</button>
+    <button class="ctab" onclick="switchTV('CBOE:VIX',this)">VIX</button>
+    <button class="ctab" onclick="switchTV('IWM',this)">IWM</button>
+    <button class="ctab" onclick="switchTV('SPX',this)">SPX</button>
+  </div>
+  <div class="chart-tf">
+    <button class="tftab active" onclick="switchTVTF('1',this)">1m</button>
+    <button class="tftab" onclick="switchTVTF('5',this)">5m</button>
+    <button class="tftab" onclick="switchTVTF('15',this)">15m</button>
+    <button class="tftab" onclick="switchTVTF('60',this)">1H</button>
+    <button class="tftab" onclick="switchTVTF('D',this)">1D</button>
+  </div>
+  <div id="tvChartContainer" style="border-radius:8px;overflow:hidden;height:400px">
+    <div class="chart-loading" id="chartLoading"><span class="sp"></span>&nbsp;Loading chart...</div>
+  </div>
+  <div style="color:#4b5563;font-size:10px;margin-top:6px;text-align:right">Powered by TradingView · Free · No key needed</div>
+</div>
+
+<!-- Catalyst Checklist -->
+<div class="checklist">
+  <div class="mrow" style="margin-bottom:4px">
+    <span class="slbl" style="margin-bottom:0">✅ PRE-TRADE CATALYST CHECKLIST</span>
+    <span style="color:#6b7280;font-size:11px;margin-left:6px">must hit 4+ to trade</span>
+  </div>
+  <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%;background:#ef4444"></div></div>
+  <div class="score-lbl" id="scoreLbl" style="color:#ef4444">0 / 6 — DO NOT TRADE</div>
+  <div style="margin-top:8px">
+    <div class="chk-item" onclick="toggleChk(0)">
+      <input type="checkbox" id="chk0"/><div><div class="chk-label">Clear catalyst present</div><div class="chk-sub">FOMC, CPI, major gap, breaking news, earnings reaction</div></div>
+    </div>
+    <div class="chk-item" onclick="toggleChk(1)">
+      <input type="checkbox" id="chk1"/><div><div class="chk-label">Momentum confirmed — not catching a knife</div><div class="chk-sub">Price already moving in direction, not fading a spike</div></div>
+    </div>
+    <div class="chk-item" onclick="toggleChk(2)">
+      <input type="checkbox" id="chk2"/><div><div class="chk-label">VIX not spiking into trade</div><div class="chk-sub">IV crush will kill profit even if directionally correct</div></div>
+    </div>
+    <div class="chk-item" onclick="toggleChk(3)">
+      <input type="checkbox" id="chk3"/><div><div class="chk-label">In a valid time window</div><div class="chk-sub">9:35–10:30 AM or 3:00–4:00 PM — avoid lunchtime</div></div>
+    </div>
+    <div class="chk-item" onclick="toggleChk(4)">
+      <input type="checkbox" id="chk4"/><div><div class="chk-label">Not overtrading — 2 scalps max today</div><div class="chk-sub">Overtrading is the #1 account killer</div></div>
+    </div>
+    <div class="chk-item" onclick="toggleChk(5)">
+      <input type="checkbox" id="chk5"/><div><div class="chk-label">Risk defined — know exact stop before entry</div><div class="chk-sub">40% loss = exit, no exceptions, no averaging down</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- News & Catalysts -->
+<div class="card" id="catalystCard">
+  <div class="mrow" style="margin-bottom:10px">
+    <span class="slbl" style="margin-bottom:0">📰 LIVE CATALYSTS & NEWS</span>
+    <button class="bref" onclick="loadNews()">↻ Refresh</button>
+  </div>
+
+  <!-- Economic Calendar -->
+  <div style="margin-bottom:12px">
+    <div style="color:#f97316;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px">📅 TODAY'S ECONOMIC EVENTS</div>
+    <div id="ecoEvents"><div style="color:#4b5563;font-size:12px">Loading...</div></div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- Catalyst Tags -->
+  <div style="margin-bottom:12px">
+    <div style="color:#f97316;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px">⚡ KNOWN SCALP CATALYSTS — TAP TO ADD TO CHECKLIST</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px" id="catalystTags">
+      <button class="ctag" onclick="addCatalyst(this,'FOMC decision today')">🏦 FOMC</button>
+      <button class="ctag" onclick="addCatalyst(this,'CPI inflation data released today')">📊 CPI Print</button>
+      <button class="ctag" onclick="addCatalyst(this,'Jobs report / NFP released today')">💼 NFP/Jobs</button>
+      <button class="ctag" onclick="addCatalyst(this,'PPI data released today')">🏭 PPI</button>
+      <button class="ctag" onclick="addCatalyst(this,'GDP data released today')">📈 GDP</button>
+      <button class="ctag" onclick="addCatalyst(this,'SPY gapped up significantly at open')">▲ Gap Up</button>
+      <button class="ctag" onclick="addCatalyst(this,'SPY gapped down significantly at open')">▼ Gap Down</button>
+      <button class="ctag" onclick="addCatalyst(this,'Major tech earnings reaction pre/post market')">💻 Tech Earnings</button>
+      <button class="ctag" onclick="addCatalyst(this,'Breaking geopolitical news moving markets')">🌍 Geo Event</button>
+      <button class="ctag" onclick="addCatalyst(this,'Fed speaker making hawkish or dovish comments')">🎤 Fed Speaker</button>
+      <button class="ctag" onclick="addCatalyst(this,'Tariff or trade policy announcement')">🔧 Tariff News</button>
+      <button class="ctag" onclick="addCatalyst(this,'VIX spiked sharply — fear event')">⚡ VIX Spike</button>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- Live News Feed -->
+  <div>
+    <div style="color:#f97316;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px">🗞️ LIVE MARKET NEWS <span style="color:#4b5563;font-weight:400">(tap → send to AI)</span></div>
+    <div id="newsBox"><div style="color:#4b5563;font-size:12px"><span class="sp"></span>Loading news...</div></div>
+  </div>
+</div>
+
+<!-- Alert Log -->
+<div class="alog">
+  <div class="mrow" style="margin-bottom:8px">
+    <span class="slbl" style="margin-bottom:0">🔔 ALERTS <span class="ac" id="acnt">0</span></span>
+    <button class="bref" onclick="clearAlerts()">Clear</button>
+  </div>
+  <div id="aitems"><div style="color:#4b5563;font-size:12px">Monitoring for scalp signals...</div></div>
+</div>
+
+<!-- Chat -->
+<div class="chat">
+  <span class="slbl">🦞 CLAWBOT — DIRECTIONAL SCALP AI</span>
+  <div class="msgs" id="msgs">
+    <div class="msg mb">Clawbot Scalper 🦞 — I'm wired for one thing: directional 0DTE scalps on SPY and QQQ. Give me a catalyst and I'll give you the exact setup. No iron condors, no spreads — just calls and puts, in and out fast.</div>
+  </div>
+  <div class="irow">
+    <textarea id="qin" placeholder="e.g. SPY gapped up 0.8% on strong jobs report... QQQ breaking above VWAP after Fed..." onkeydown="hkey(event)"></textarea>
+    <button class="btn" id="sbtn" onclick="send()">🦞 Ask</button>
+  </div>
+  <div class="qq">
+    <button class="bsm" onclick="qa('SPY is up '+getPct('spy')+'% today. Is this a valid bull scalp setup? What exact contract and entry?')">SPY bull scalp?</button>
+    <button class="bsm" onclick="qa('QQQ is '+getPct('qqq')+'% today. Bear or bull scalp? Give me entry, contract, stop, target.')">QQQ scalp setup?</button>
+    <button class="bsm" onclick="qa('VIX is at '+getVIX()+'. Does this help or hurt a directional scalp right now?')">VIX impact on scalp?</button>
+    <button class="bsm" onclick="qa('Market opened with a gap. Walk me through the open range breakout scalp setup for today.')">Open range breakout</button>
+    <button class="bsm" onclick="qa('I am in a scalp trade that is not moving after 15 minutes. What do I do?')">Trade not moving</button>
+    <button class="bsm" onclick="qa('What are the exact rules for exiting a 0DTE directional scalp — profit target, stop, time stop?')">Exit rules</button>
+  </div>
+</div>
+
+<div class="footer">localhost:8080 only · Not financial advice · Max 2 scalps/day · 40% stop always</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────
+let mkt={spy:null,qqq:null,vix:null}, alerts=0, flagged={}, history=[], chkState=[false,false,false,false,false,false];
+
+// ─── Keys ─────────────────────────────────────────────────────────
+const KEYS=['apiKey','finnhubKey','ejKey','ejSvc','ejTpl','phone'];
+function saveKeys(){KEYS.forEach(k=>{const el=document.getElementById(k);if(el)sessionStorage.setItem('cs_'+k,el.value)});}
+function loadKeys(){KEYS.forEach(k=>{const v=sessionStorage.getItem('cs_'+k);if(v){const el=document.getElementById(k);if(el)el.value=v;}});}
+
+// ─── Helpers ──────────────────────────────────────────────────────
+function getPct(t){return mkt[t]?mkt[t].pct+'%':'--';}
+function getVIX(){return mkt.vix?mkt.vix.price:'--';}
+function setStatus(c,t){document.getElementById('sdot').className=`dot d${c[0]}`;document.getElementById('stxt').textContent=t;}
+
+// ─── Finnhub ─────────────────────────────────────────────────────
+async function fetchFH(sym){
+  const key=document.getElementById('finnhubKey').value.trim();
+  if(!key)return null;
+  try{
+    const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${key}`);
+    if(!r.ok)return null;
+    const d=await r.json();
+    if(!d.c)return null;
+    const ch=d.c-d.pc, pct=((ch/d.pc)*100).toFixed(2);
+    return{price:d.c.toFixed(2),change:ch.toFixed(2),pct,raw:d.c};
+  }catch{return null;}
+}
+
+async function loadPrices(){
+  const key=document.getElementById('finnhubKey').value.trim();
+  if(!key){setStatus('yellow','No Finnhub key — use manual prices');return;}
+  setStatus('yellow','Fetching...');
+  const[spy,qqq,vix]=await Promise.all([fetchFH('SPY'),fetchFH('QQQ'),fetchFH('^VIX')]);
+  if(spy){mkt.spy=spy;renderCard('SPY','p-spy','ch-spy',spy,'#4ade80');}
+  if(qqq){mkt.qqq=qqq;renderCard('QQQ','p-qqq','ch-qqq',qqq,'#60a5fa');}
+  if(vix){mkt.vix=vix;renderVIX(parseFloat(vix.price));}
+  setStatus('green',`Live · ${new Date().toLocaleTimeString()}`);
+  updateSignal();
+  checkAlerts();
+}
+
+function renderCard(id,px,ch,d,color){
+  document.getElementById(px).textContent=`$${d.price}`;
+  const up=parseFloat(d.change)>=0;
+  document.getElementById(ch).textContent=`${up?'▲':'▼'} ${Math.abs(d.change)} (${up?'+':''}${d.pct}%)`;
+  document.getElementById(ch).style.color=up?'#4ade80':'#ef4444';
+  document.getElementById(`c-${id}`).style.borderColor=color+'55';
+}
+
+function renderVIX(v){
+  document.getElementById('p-vix').textContent=v.toFixed(2);
+  const pct=Math.min(100,(v/50)*100);
+  const col=v<15?'#6b7280':v<20?'#4ade80':v<30?'#f59e0b':'#ef4444';
+  document.getElementById('vbar').style.cssText=`width:${pct}%;background:${col}`;
+  document.getElementById('c-VIX').style.borderColor=col+'77';
+  if(mkt.vix){
+    const up=parseFloat(mkt.vix.change)>=0;
+    document.getElementById('ch-vix').textContent=`${up?'▲':'▼'} ${Math.abs(mkt.vix.change)}`;
+    document.getElementById('ch-vix').style.color=up?'#ef4444':'#4ade80';
+  }
+}
+
+// ─── Manual ───────────────────────────────────────────────────────
+function manualUpdate(){
+  const spy=parseFloat(document.getElementById('m-spy').value);
+  const qqq=parseFloat(document.getElementById('m-qqq').value);
+  const vix=parseFloat(document.getElementById('m-vix').value);
+  const spyP=parseFloat(document.getElementById('m-spy-p').value);
+  const qqqP=parseFloat(document.getElementById('m-qqq-p').value);
+  if(spy&&spyP){const ch=spy-spyP,pct=((ch/spyP)*100).toFixed(2);mkt.spy={price:spy.toFixed(2),change:ch.toFixed(2),pct,raw:spy};renderCard('SPY','p-spy','ch-spy',mkt.spy,'#4ade80');}
+  if(qqq&&qqqP){const ch=qqq-qqqP,pct=((ch/qqqP)*100).toFixed(2);mkt.qqq={price:qqq.toFixed(2),change:ch.toFixed(2),pct,raw:qqq};renderCard('QQQ','p-qqq','ch-qqq',mkt.qqq,'#60a5fa');}
+  if(vix){mkt.vix={price:vix.toFixed(2),change:'0',pct:'0',raw:vix};renderVIX(vix);}
+  setStatus('green','Manual prices set');
+  updateSignal();
+  checkAlerts();
+}
+
+// ─── Signal Engine ────────────────────────────────────────────────
+function updateSignal(){
+  const spy=mkt.spy, qqq=mkt.qqq, vix=mkt.vix;
+  if(!spy&&!qqq){return;}
+
+  const spyPct=spy?parseFloat(spy.pct):0;
+  const qqqPct=qqq?parseFloat(qqq.pct):0;
+  const vixVal=vix?parseFloat(vix.price):17;
+  const now=new Date(), h=now.getHours(), m=now.getMinutes();
+  const inWindow=(h===9&&m>=35)||(h===10&&m<=30)||(h>=15&&h<16);
+  const vixOk=vixVal<25; // IV not spiking too hard
+
+  // Determine signal
+  const bigMover=Math.abs(spyPct)>0.5||Math.abs(qqqPct)>0.5;
+  const ticker=Math.abs(qqqPct)>Math.abs(spyPct)?'QQQ':'SPY';
+  const pct=ticker==='QQQ'?qqqPct:spyPct;
+  const price=ticker==='QQQ'?qqq?.price:spy?.price;
+
+  const box=document.getElementById('sigBox');
+  const icon=document.getElementById('sigIcon');
+  const title=document.getElementById('sigTitle');
+  const sub=document.getElementById('sigSub');
+
+  if(!bigMover){
+    box.className='signal-box wait';
+    icon.textContent='😴';
+    title.textContent='NO SIGNAL';
+    title.style.color='#6b7280';
+    sub.textContent=`SPY ${spy?.pct||'--'}% · QQQ ${qqq?.pct||'--'}% · Market not moving enough. Wait for a catalyst or 0.5%+ move.`;
+    document.getElementById('tradePlan').style.display='none';
+    return;
+  }
+
+  if(!inWindow){
+    box.className='signal-box wait';
+    icon.textContent='⏰';
+    title.textContent='WRONG TIME WINDOW';
+    title.style.color='#f59e0b';
+    sub.textContent=`${ticker} is moving ${pct>0?'+':''}${pct}% but it's lunchtime/off-hours. Wait for 9:35–10:30 AM or 3:00–4:00 PM window.`;
+    return;
+  }
+
+  if(!vixOk){
+    box.className='signal-box wait';
+    icon.textContent='⚠️';
+    title.textContent='HIGH IV — CAUTION';
+    title.style.color='#f59e0b';
+    sub.textContent=`VIX ${vixVal.toFixed(1)} is elevated. IV crush risk is high. Size down by 50% or skip. Premium may not follow the move.`;
+  } else if(pct>0){
+    box.className='signal-box bull';
+    icon.textContent='🟢';
+    title.textContent=`BULL SCALP — ${ticker}`;
+    title.style.color='#4ade80';
+    sub.textContent=`${ticker} up ${pct}% · Confirm momentum · Buy ATM call · 5–20 min hold · VIX ${vixVal.toFixed(1)} ✅`;
+  } else {
+    box.className='signal-box bear';
+    icon.textContent='🔴';
+    title.textContent=`BEAR SCALP — ${ticker}`;
+    title.style.color='#ef4444';
+    sub.textContent=`${ticker} down ${Math.abs(pct)}% · Confirm momentum · Buy ATM put · 5–20 min hold · VIX ${vixVal.toFixed(1)} ✅`;
+  }
+
+  // Show trade plan
+  if(bigMover&&inWindow){
+    const plan=document.getElementById('tradePlan');
+    plan.style.display='block';
+    plan.className=pct>0?'plan':'plan bear-plan';
+    const atmStrike=Math.round(parseFloat(price||500)/1)*1;
+    document.getElementById('p-ticker').textContent=ticker;
+    document.getElementById('p-dir').innerHTML=pct>0?'<span class="green">LONG CALL ▲</span>':'<span class="red">LONG PUT ▼</span>';
+    document.getElementById('p-contract').textContent=`${ticker} 0DTE $${atmStrike} ${pct>0?'Call':'Put'} (ATM)`;
+    document.getElementById('p-delta').textContent=`0.45–0.55Δ (ATM) · avoid OTM — decays too fast`;
+    document.getElementById('p-hold').textContent='5–20 minutes MAX · time stop is non-negotiable';
+    document.getElementById('p-target').textContent='50–100% gain · take it, don\'t get greedy';
+    document.getElementById('p-stop').textContent='40% loss · exit immediately, no averaging down';
+    document.getElementById('p-flatby').textContent='If not profitable in 15 min → exit regardless';
+    document.getElementById('p-avoid').textContent='12–1:30 PM lunchtime · VIX > 25 · No clear catalyst';
+    document.getElementById('planTitle').textContent=`📋 ${ticker} ${pct>0?'BULL CALL':'BEAR PUT'} SCALP PLAN`;
+  }
+
+  updateWindow(h,m);
+}
+
+function updateWindow(h,m){
+  let status='', color='#6b7280';
+  if(h===9&&m>=35&&m<60){status='✅ OPEN RANGE — Best scalp window. High momentum, lots of direction.'; color='#4ade80';}
+  else if(h===10&&m<=30){status='⚡ REVERSAL ZONE — Watch for fades. Enter only on confirmation, not anticipation.'; color='#f97316';}
+  else if((h===10&&m>30)||h===11||(h===12)||(h===13)||(h===14&&m<50)){status='❌ LUNCHTIME / DEAD ZONE — Do not scalp. Low volume, choppy, no follow-through.'; color='#ef4444';}
+  else if(h>=15&&h<16){status='✅ CLOSING DRIVE — Good momentum window. Watch for directional push into close.'; color='#4ade80';}
+  else if(h>=16){status='⛔ MARKET CLOSED'; color='#6b7280';}
+  else{status='Pre-market'; color='#6b7280';}
+  document.getElementById('windowStatus').textContent=status;
+  document.getElementById('windowStatus').style.color=color;
+}
+
+// ─── Checklist ────────────────────────────────────────────────────
+function toggleChk(i){
+  chkState[i]=!chkState[i];
+  document.getElementById('chk'+i).checked=chkState[i];
+  updateScore();
+}
+function updateScore(){
+  const score=chkState.filter(Boolean).length;
+  const pct=(score/6)*100;
+  const color=score>=5?'#4ade80':score>=4?'#f97316':'#ef4444';
+  const label=score>=5?`${score} / 6 — ✅ TRADE IS ON`:score>=4?`${score} / 6 — ⚡ PROCEED WITH CAUTION`:`${score} / 6 — ❌ DO NOT TRADE`;
+  document.getElementById('scoreFill').style.cssText=`width:${pct}%;background:${color}`;
+  document.getElementById('scoreLbl').textContent=label;
+  document.getElementById('scoreLbl').style.color=color;
+}
+
+// ─── Alerts ───────────────────────────────────────────────────────
+async function checkAlerts(){
+  const spy=mkt.spy, qqq=mkt.qqq, vix=mkt.vix;
+  const spyPct=spy?Math.abs(parseFloat(spy.pct)):0;
+  const qqqPct=qqq?Math.abs(parseFloat(qqq.pct)):0;
+  const vixVal=vix?parseFloat(vix.price):0;
+  const now=new Date(),h=now.getHours(),m=now.getMinutes();
+  const inWindow=(h===9&&m>=35)||(h===10&&m<=30)||(h>=15&&h<16);
+
+  // Big SPY move in window
+  if(spyPct>=0.7&&inWindow&&!flagged[`spy${Math.floor(spyPct*10)}`]){
+    flagged[`spy${Math.floor(spyPct*10)}`]=true;
+    const dir=parseFloat(spy.pct)>0?'BULL':'BEAR';
+    const msg=`🦞 SCALP SIGNAL: SPY ${dir} — ${spy.pct}% → $${spy.price}. Buy ATM ${dir==='BULL'?'call':'put'} 0DTE. Hold max 20 min. Stop 40%.`;
+    logAlert(msg,'ok');
+    await sendSMS(`🦞 SPY ${dir} SCALP`,msg);
+  }
+  // Big QQQ move in window
+  if(qqqPct>=1.0&&inWindow&&!flagged[`qqq${Math.floor(qqqPct*10)}`]){
+    flagged[`qqq${Math.floor(qqqPct*10)}`]=true;
+    const dir=parseFloat(qqq.pct)>0?'BULL':'BEAR';
+    const msg=`🦞 SCALP SIGNAL: QQQ ${dir} — ${qqq.pct}% → $${qqq.price}. Buy ATM ${dir==='BULL'?'call':'put'} 0DTE. Hold max 20 min. Stop 40%.`;
+    logAlert(msg,'ok');
+    await sendSMS(`🦞 QQQ ${dir} SCALP`,msg);
+  }
+  // VIX spike warning
+  if(vixVal>22&&!flagged[`vix${Math.floor(vixVal)}`]){
+    flagged[`vix${Math.floor(vixVal)}`]=true;
+    logAlert(`⚠️ VIX ${vixVal.toFixed(1)} — IV crush risk. Size down 50% on any scalp.`,'bad');
+    await sendSMS('🦞 VIX WARNING',`VIX ${vixVal.toFixed(1)} elevated. IV crush risk on directional scalps. Size down or skip.`);
+  }
+}
+
+function logAlert(msg,type){
+  alerts++;
+  document.getElementById('acnt').textContent=alerts;
+  const c=document.getElementById('aitems');
+  const d=document.createElement('div');
+  d.className=`aitem ${type}`;
+  d.innerHTML=`${msg} <span style="color:#6b7280;font-size:10px;float:right">${new Date().toLocaleTimeString()}</span>`;
+  c.prepend(d); d.classList.add('flash');
+}
+function clearAlerts(){document.getElementById('aitems').innerHTML='<div style="color:#4b5563;font-size:12px">Cleared.</div>';alerts=0;document.getElementById('acnt').textContent=0;}
+
+// ─── SMS ─────────────────────────────────────────────────────────
+async function sendSMS(subj,body){
+  const pub=document.getElementById('ejKey').value.trim();
+  const svc=document.getElementById('ejSvc').value.trim();
+  const tpl=document.getElementById('ejTpl').value.trim();
+  const ph=document.getElementById('phone').value.replace(/\D/g,'');
+  if(!pub||!svc||!tpl||!ph)return false;
+  emailjs.init(pub);
+  try{await emailjs.send(svc,tpl,{to_email:`${ph}@txt.att.net`,subject:subj,message:body});return true;}
+  catch(e){logAlert('❌ SMS error: '+e.text,'bad');return false;}
+}
+async function sendTestSMS(){
+  logAlert('📱 Sending test SMS...','');
+  const ok=await sendSMS('🦞 Clawbot Scalper Test','Scalp alerts are live. You\'ll get texts on SPY/QQQ momentum signals.');
+  if(ok)logAlert('✅ SMS sent to '+document.getElementById('phone').value,'ok');
+}
+
+// ─── Chat ────────────────────────────────────────────────────────
+function ctx(){
+  const cats = activeCatalysts.length ? activeCatalysts.join(', ') : 'none selected';
+  const topNews = newsItems.slice(0,4).map(n=>`[${n.imp.toUpperCase()}] ${n.t}`).join('\n') || 'no news loaded';
+  return`LIVE DATA: SPY $${mkt.spy?.price||'--'} (${mkt.spy?.pct||'--'}%) | QQQ $${mkt.qqq?.price||'--'} (${mkt.qqq?.pct||'--'}%) | VIX ${mkt.vix?.price||'--'}
+VWAP: ${document.getElementById('m-vwap').value||'not set'}
+TIME: ${new Date().toLocaleTimeString()}
+CHECKLIST SCORE: ${chkState.filter(Boolean).length}/6
+ACTIVE CATALYSTS: ${cats}
+TODAY'S NEWS:\n${topNews}`;
+}
+
+const SYS=`You are Clawbot Scalper 🦞 — a directional 0DTE options scalping specialist. You ONLY discuss directional scalp trades: buying ATM calls or puts on SPY or QQQ intraday.
+
+Rules you never break:
+- Only ATM or slightly ITM options (never OTM on 0DTE scalps — decays too fast)
+- Catalyst required — no catalyst = no trade
+- Hold time: 5–20 minutes maximum
+- Hard stop: 40% loss, always
+- Profit target: 50–100%, take it
+- Max 2 scalps per day
+- No iron condors, no credit spreads, no VIX plays — redirect if asked
+- Best windows: 9:35–10:30 AM and 3:00–4:00 PM only
+- If VIX > 25, warn about IV crush and suggest sizing down
+
+Always give: ticker, direction, contract (strike, expiry), entry timing, hold time, profit target, stop loss. Be specific and concise.`;
+
+async function send(){
+  const inp=document.getElementById('qin');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key.startsWith('sk-')){
+    addMsg('b',location.protocol==='file:'?'❌ Must run on localhost:8080 — see terminal command in keys section':'⚠️ Enter Anthropic API key');
+    return;
+  }
+  addMsg('u',txt); inp.value='';
+  document.getElementById('sbtn').disabled=true;
+  addMsg('b','<span class="sp"></span>Analyzing scalp setup...','thinking');
+  history.push({role:'user',content:ctx()+'\n\nQUESTION: '+txt});
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':key,'anthropic-dangerous-direct-browser-calls':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:SYS,messages:history})
+    });
+    const d=await r.json();
+    rmLast();
+    if(!r.ok){addMsg('b',`❌ API ${r.status}: ${d?.error?.message||JSON.stringify(d)}`);history.pop();}
+    else{
+      const rep=d.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||'No response.';
+      history.push({role:'assistant',content:rep});
+      if(history.length>12)history=history.slice(-12);
+      addMsg('b',rep);
+    }
+  }catch(e){
+    rmLast();
+    addMsg('b',location.protocol==='file:'?'❌ File:// blocks API. Run: python3 -m http.server 8080 then open localhost:8080/clawbot-scalp.html':'❌ '+e.message);
+    history.pop();
+  }
+  document.getElementById('sbtn').disabled=false;
+}
+
+function addMsg(r,t,id){
+  const c=document.getElementById('msgs');
+  const d=document.createElement('div');
+  d.className=`msg m${r}`;
+  if(id)d.id=id;
+  d.innerHTML=t.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/^• /gm,'▸ ');
+  c.appendChild(d); c.scrollTop=c.scrollHeight;
+}
+function rmLast(){const e=document.getElementById('thinking');if(e)e.remove();}
+function qa(q){document.getElementById('qin').value=q;send();}
+function hkey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+async function refreshAll(){await Promise.all([loadPrices(), loadNews(), loadEconomicCalendar()]);}
+
+
+// ─── Active Catalysts ─────────────────────────────────────────────
+let activeCatalysts = [];
+function addCatalyst(btn, text) {
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) {
+    activeCatalysts.push(text);
+    logAlert('⚡ Catalyst added: ' + text, 'ok');
+  } else {
+    activeCatalysts = activeCatalysts.filter(c => c !== text);
+  }
+  // Auto-check catalyst checklist item
+  if (activeCatalysts.length > 0 && !chkState[0]) {
+    chkState[0] = true;
+    document.getElementById('chk0').checked = true;
+    updateScore();
+  } else if (activeCatalysts.length === 0) {
+    chkState[0] = false;
+    document.getElementById('chk0').checked = false;
+    updateScore();
+  }
+}
+
+// ─── Economic Calendar (hardcoded daily events + Finnhub) ─────────
+const ECO_SCHEDULE = [
+  { time: '8:30 AM', name: 'Jobless Claims', imp: 'med', days: [4] },
+  { time: '8:30 AM', name: 'CPI / PPI / NFP', imp: 'high', days: [1,2,3,4,5] },
+  { time: '9:15 AM', name: 'Industrial Production', imp: 'low', days: [1,2,3,4,5] },
+  { time: '10:00 AM', name: 'ISM / Consumer Confidence', imp: 'med', days: [1,3] },
+  { time: '2:00 PM', name: 'FOMC Minutes / Decision', imp: 'high', days: [3] },
+  { time: '2:30 PM', name: 'Fed Chair Press Conference', imp: 'high', days: [3] },
+];
+
+async function loadEconomicCalendar() {
+  const key = document.getElementById('finnhubKey').value.trim();
+  const today = new Date();
+  const dow = today.getDay();
+  const dateStr = today.toISOString().split('T')[0];
+
+  if (key) {
+    try {
+      const r = await fetch(`https://finnhub.io/api/v1/calendar/economic?from=${dateStr}&to=${dateStr}&token=${key}`);
+      if (r.ok) {
+        const d = await r.json();
+        const events = (d.economicCalendar || []).slice(0, 8);
+        if (events.length > 0) {
+          document.getElementById('ecoEvents').innerHTML = events.map(e => {
+            const imp = e.impact === 'high' ? 'eco-high' : e.impact === 'medium' ? 'eco-med' : 'eco-low';
+            const impLbl = e.impact === 'high' ? '🔴 HIGH' : e.impact === 'medium' ? '🟡 MED' : '⚪ LOW';
+            const t = e.time ? e.time.slice(11,16) : '--';
+            return `<div class="eco-item">
+              <span class="eco-time">${t}</span>
+              <span class="eco-name">${e.event||e.name||'Event'}</span>
+              <span class="eco-imp ${imp}">${impLbl}</span>
+            </div>`;
+          }).join('');
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Fallback: show relevant standing schedule
+  const relevant = ECO_SCHEDULE.filter(e => e.days.includes(dow) || e.imp === 'high');
+  if (relevant.length === 0) {
+    document.getElementById('ecoEvents').innerHTML = '<div style="color:#4b5563;font-size:12px">No major events today. Add Finnhub key for live calendar.</div>';
+    return;
+  }
+  document.getElementById('ecoEvents').innerHTML = relevant.map(e => {
+    const ic = e.imp === 'high' ? 'eco-high' : e.imp === 'med' ? 'eco-med' : 'eco-low';
+    const il = e.imp === 'high' ? '🔴 HIGH' : e.imp === 'med' ? '🟡 MED' : '⚪ LOW';
+    return `<div class="eco-item"><span class="eco-time">${e.time}</span><span class="eco-name">${e.name}</span><span class="eco-imp ${ic}">${il}</span></div>`;
+  }).join('');
+}
+
+// ─── News Feed ────────────────────────────────────────────────────
+let newsItems = [];
+async function loadNews() {
+  document.getElementById('newsBox').innerHTML = '<div style="color:#4b5563;font-size:12px"><span class="sp"></span>Loading news...</div>';
+
+  // Try Finnhub news first (works from GitHub Pages, no CORS issues)
+  const fhKey = document.getElementById('finnhubKey').value.trim();
+  if (fhKey) {
+    try {
+      const r = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${fhKey}`);
+      if (r.ok) {
+        const data = await r.json();
+        const filtered = data.filter(n => n.headline && n.headline.length > 10).slice(0, 10);
+        if (filtered.length > 0) {
+          newsItems = [];
+          filtered.forEach(n => {
+            const t = n.headline || '';
+            const desc = n.summary || '';
+            const d = new Date(n.datetime * 1000).toUTCString();
+            const analysis = analyzeNews(t, desc);
+            newsItems.push({ t, d, desc, imp: analysis.dir, analysis });
+          });
+          renderNews();
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Try multiple RSS proxies in sequence
+  const rssUrl = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=SPY,QQQ,NVDA,AAPL,MSFT&region=US&lang=en-US';
+  const proxies = [
+    'https://api.allorigins.win/get?url=',
+    'https://api.codetabs.com/v1/proxy?quest=',
+    'https://corsproxy.io/?',
+  ];
+
+  for (const proxy of proxies) {
+    try {
+      const isGet = proxy.includes('allorigins') || proxy.includes('codetabs');
+      const fetchUrl = isGet ? proxy + encodeURIComponent(rssUrl) : proxy + rssUrl;
+      const r = await fetch(fetchUrl, { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) continue;
+
+      let xmlText;
+      if (proxy.includes('allorigins')) {
+        const o = await r.json();
+        xmlText = o.contents;
+      } else {
+        xmlText = await r.text();
+      }
+
+      const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
+      const items = xml.querySelectorAll('item');
+      if (!items.length) continue;
+
+      newsItems = [];
+      items.forEach((it, i) => {
+        if (i >= 10) return;
+        const t = it.querySelector('title')?.textContent || '';
+        const d = it.querySelector('pubDate')?.textContent || '';
+        const desc = it.querySelector('description')?.textContent?.replace(/<[^>]*>/g,'').slice(0,120) || '';
+        const analysis = analyzeNews(t, desc);
+        newsItems.push({ t, d, desc, imp: analysis.dir, analysis });
+      });
+      renderNews();
+      return;
+    } catch(e) { continue; }
+  }
+
+  // All proxies failed — show curated static catalyst news as fallback
+  showStaticCatalysts();
+}
+
+function showStaticCatalysts() {
+  const staticNews = [
+    { t: 'Federal Reserve holds rates steady, signals data-dependent path forward', desc: 'Fed keeps benchmark rate unchanged', imp: 'neu' },
+    { t: 'S&P 500 futures point to flat open ahead of key inflation data', desc: 'Markets await CPI print', imp: 'neu' },
+    { t: 'Tech stocks lead gains as AI spending outlook remains strong', desc: 'Nvidia, Microsoft lead rally', imp: 'bull' },
+    { t: 'VIX elevated as traders hedge ahead of economic data releases', desc: 'Options activity surges', imp: 'bear' },
+    { t: 'Treasury yields rise on strong jobs data, pressuring growth stocks', desc: 'Rate-sensitive sectors under pressure', imp: 'bear' },
+  ];
+  newsItems = staticNews.map(n => {
+    const analysis = analyzeNews(n.t, n.desc);
+    return { t: n.t, d: new Date().toUTCString(), desc: n.desc, imp: analysis.dir, analysis };
+  });
+  renderNews();
+  // Add note that this is static
+  const box = document.getElementById('newsBox');
+  box.innerHTML = '<div style="color:#f59e0b;font-size:11px;margin-bottom:8px">⚠️ Live feed unavailable — showing example catalysts. Add Finnhub key for real news.</div>' + box.innerHTML;
+}
+
+// Significance scoring: returns {dir, strength, reason, scalp}
+function analyzeNews(title, desc) {
+  const t = (title + ' ' + desc).toLowerCase();
+
+  // HIGH significance bearish patterns
+  const highBear = [
+    { pat: ['recession','gdp contraction','gdp shrinks'], reason: 'Recession signal — broad market selloff likely', scalp: 'Bear scalp SPY puts, larger size' },
+    { pat: ['fed hikes','rate hike','hawkish','higher for longer'], reason: 'Fed tightening — growth stocks hit hard', scalp: 'Bear scalp QQQ puts' },
+    { pat: ['cpi hot','inflation above','core cpi rises','inflation surges'], reason: 'Hot inflation — rate hike fears spike', scalp: 'Bear scalp SPY/QQQ puts on open' },
+    { pat: ['bank failure','bank collapses','credit crisis','banking crisis'], reason: 'Systemic risk — panic selling likely', scalp: 'Bear scalp SPY puts, high urgency' },
+    { pat: ['tariff','trade war','sanctions','export ban'], reason: 'Trade friction — tech and industrials hit', scalp: 'Bear scalp QQQ puts' },
+    { pat: ['geopolit','war escalat','military strike','attack on'], reason: 'Geopolitical shock — risk-off flight', scalp: 'Bear scalp SPY puts, quick in/out' },
+    { pat: ['mass layoffs','major layoffs','jobs cut'], reason: 'Employment shock — consumer fear rises', scalp: 'Bear scalp if broad-based' },
+  ];
+
+  // HIGH significance bullish patterns
+  const highBull = [
+    { pat: ['fed cuts','rate cut','dovish','pivot','easing'], reason: 'Fed easing — strong bull catalyst for all indices', scalp: 'Bull scalp SPY/QQQ calls, higher confidence' },
+    { pat: ['cpi cools','inflation falls','core cpi drops','inflation below'], reason: 'Cooling inflation — rate cut hopes spike', scalp: 'Bull scalp QQQ calls on open' },
+    { pat: ['blowout earnings','record earnings','earnings beat','crushes estimates'], reason: 'Strong earnings — sector and index lift', scalp: 'Bull scalp QQQ calls if tech name' },
+    { pat: ['jobs surge','strong jobs','nfp beats','payrolls beat'], reason: 'Strong employment — soft landing narrative', scalp: 'Bull scalp SPY calls' },
+    { pat: ['trade deal','tariffs removed','ceasefire','peace deal'], reason: 'Risk-on event — broad market rally likely', scalp: 'Bull scalp SPY calls, strong signal' },
+    { pat: ['gdp beats','gdp growth','economy expands'], reason: 'Strong growth — risk appetite increases', scalp: 'Bull scalp SPY/QQQ calls' },
+    { pat: ['ai breakthrough','major ai','nvidia beats','semis surge'], reason: 'AI/tech catalyst — QQQ outperforms', scalp: 'Bull scalp QQQ calls, high conviction' },
+  ];
+
+  // MEDIUM significance patterns
+  const medBear = [
+    { pat: ['misses estimates','earnings miss','disappoints','below expectations'], reason: 'Earnings miss — sector pressure', scalp: 'Bear scalp if major index component' },
+    { pat: ['consumer confidence falls','sentiment drops'], reason: 'Consumer weakness signal', scalp: 'Light bear scalp SPY puts' },
+    { pat: ['vix spikes','volatility surges','fear index'], reason: 'Volatility spike — IV crush risk on longs', scalp: 'Caution: IV crush risk, size down' },
+    { pat: ['debt ceiling','government shutdown','budget impasse'], reason: 'Policy uncertainty — choppy markets', scalp: 'Avoid scalping until resolved' },
+  ];
+  const medBull = [
+    { pat: ['better than expected','stronger than expected','surprise to upside'], reason: 'Positive surprise — short-term lift', scalp: 'Light bull scalp on momentum' },
+    { pat: ['buyback','dividend increase','acquisition'], reason: 'Corporate action — sector positive', scalp: 'Bull scalp if broad spillover' },
+  ];
+
+  // Check patterns in order of significance
+  for (const item of highBear) {
+    if (item.pat.some(p => t.includes(p))) return { dir:'bear', strength:'HIGH', reason: item.reason, scalp: item.scalp };
+  }
+  for (const item of highBull) {
+    if (item.pat.some(p => t.includes(p))) return { dir:'bull', strength:'HIGH', reason: item.reason, scalp: item.scalp };
+  }
+  for (const item of medBear) {
+    if (item.pat.some(p => t.includes(p))) return { dir:'bear', strength:'MED', reason: item.reason, scalp: item.scalp };
+  }
+  for (const item of medBull) {
+    if (item.pat.some(p => t.includes(p))) return { dir:'bull', strength:'MED', reason: item.reason, scalp: item.scalp };
+  }
+
+  // Fallback simple keyword scoring
+  const bWords = ['rise','gain','rally','surges','beats','record','higher','bull','rate cut','strong','jump','soar'];
+  const rWords = ['fall','drop','sell','crash','hike','warning','miss','decline','fear','slump','plunge','tumble'];
+  const bScore = bWords.filter(w => t.includes(w)).length;
+  const rScore = rWords.filter(w => t.includes(w)).length;
+  if (bScore > rScore) return { dir:'bull', strength:'LOW', reason:'Positive sentiment language detected', scalp:'Weak signal — confirm with price action' };
+  if (rScore > bScore) return { dir:'bear', strength:'LOW', reason:'Negative sentiment language detected', scalp:'Weak signal — confirm with price action' };
+  return { dir:'neu', strength:'LOW', reason:'No strong directional signal', scalp:'Skip — not a scalp catalyst' };
+}
+
+function gImp(t, desc) {
+  return analyzeNews(t, desc || '').dir;
+}
+
+function tAgo(d) {
+  try { const m = Math.round((Date.now() - new Date(d)) / 60000); return m < 60 ? `${m}m ago` : `${Math.round(m/60)}h ago`; } catch { return ''; }
+}
+
+function renderNews() {
+  if (!newsItems.length) { document.getElementById('newsBox').innerHTML = '<div style="color:#6b7280;font-size:12px">No news loaded.</div>'; return; }
+  document.getElementById('newsBox').innerHTML = newsItems.map(n => {
+    const a = analyzeNews(n.t, n.desc);
+    const dirColor = a.dir==='bull'?'#4ade80':a.dir==='bear'?'#ef4444':'#6b7280';
+    const dirLabel = a.dir==='bull'?'▲ BULL':a.dir==='bear'?'▼ BEAR':'◆ NEUTRAL';
+    const strColor = a.strength==='HIGH'?'#ef4444':a.strength==='MED'?'#f59e0b':'#6b7280';
+    const strBg = a.strength==='HIGH'?'#ef444422':a.strength==='MED'?'#f59e0b22':'#37415122';
+    const borderColor = a.dir==='bull'?'#4ade8066':a.dir==='bear'?'#ef444466':'#37415166';
+    const safe = n.t.replace(/'/g,"\'").replace(/"/g,"'");
+    return `<div class="nitem" style="border-left-color:${borderColor};margin-bottom:10px" onclick="newsToChat('${safe}','${a.dir}','${a.strength}','${a.reason.replace(/'/g,"\'")}','${a.scalp.replace(/'/g,"\'")}')">
+      <div class="nh" style="font-weight:600">${n.t}</div>
+      <div class="nm">${tAgo(n.d)}</div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px">
+        <span style="background:${dirColor}22;color:${dirColor};border:1px solid ${dirColor}44;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px">${dirLabel}</span>
+        <span style="background:${strBg};color:${strColor};border:1px solid ${strColor}44;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px">${a.strength} SIGNIFICANCE</span>
+      </div>
+      <div style="margin-top:6px;padding:6px 8px;background:#0a0f1a;border-radius:6px">
+        <div style="color:#9ca3af;font-size:11px;line-height:1.5">📌 ${a.reason}</div>
+        <div style="color:${dirColor};font-size:11px;font-weight:700;margin-top:3px">🦞 ${a.scalp}</div>
+      </div>
+      <div style="color:#4b5563;font-size:10px;margin-top:5px">tap → send to Clawbot AI ↓</div>
+    </div>`;
+  }).join('');
+}
+
+function newsToChat(headline, dir, strength, reason, scalp) {
+  let q;
+  if (dir && strength) {
+    q = `News: "${headline}"\nSignificance: ${strength} | Direction: ${dir.toUpperCase()} | Why: ${reason}\nSuggested play: ${scalp}\n\nConfirm this scalp setup given current SPY/QQQ/VIX levels. Give exact contract, entry timing, target, and stop.`;
+  } else {
+    q = `Breaking news: "${headline}" — is this a valid catalyst for a directional 0DTE scalp on SPY or QQQ? If yes, give me the exact trade setup.`;
+  }
+  document.getElementById('qin').value = q;
+  send();
+  document.getElementById('qin').scrollIntoView({ behavior: 'smooth' });
+}
+
+
+// ─── TradingView Charts ───────────────────────────────────────────
+let tvSym = 'SPY';
+let tvTF = '1';
+
+function buildTVWidget(sym, tf) {
+  if (!window.TradingView) {
+    loadTVScript(() => buildTVWidget(sym, tf));
+    return;
+  }
+  const container = document.getElementById('tvChartContainer');
+  container.innerHTML = '';
+  const div = document.createElement('div');
+  div.id = 'tv_widget';
+  div.style.height = '400px';
+  container.appendChild(div);
+
+  new TradingView.widget({
+    container_id: 'tv_widget',
+    symbol: sym,
+    interval: tf,
+    timezone: 'America/New_York',
+    theme: 'dark',
+    style: '1',           // candlesticks
+    locale: 'en',
+    toolbar_bg: '#0a0f1a',
+    enable_publishing: false,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    save_image: false,
+    backgroundColor: '#0a0f1a',
+    gridColor: '#1f2937',
+    studies: [
+      'VWAP@tv-basicstudies',
+      'Volume@tv-basicstudies',
+      'RSI@tv-basicstudies',
+    ],
+    width: '100%',
+    height: 400,
+    autosize: true,
+    withdateranges: false,
+    hide_side_toolbar: true,
+    allow_symbol_change: false,
+    show_popup_button: false,
+  });
+}
+
+function switchTV(sym, btn) {
+  document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tvSym = sym;
+  buildTVWidget(tvSym, tvTF);
+}
+
+function switchTVTF(tf, btn) {
+  document.querySelectorAll('.tftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tvTF = tf;
+  buildTVWidget(tvSym, tvTF);
+}
+
+function loadTVScript(cb) {
+  if (window.TradingView) { cb(); return; }
+  // Check if script already loading
+  if (document.getElementById('tv-script')) {
+    const wait = setInterval(() => {
+      if (window.TradingView) { clearInterval(wait); cb(); }
+    }, 100);
+    return;
+  }
+  const s = document.createElement('script');
+  s.id = 'tv-script';
+  s.src = 'https://s3.tradingview.com/tv.js';
+  s.async = true;
+  s.onload = () => {
+    // Give TV a moment to initialize its namespace
+    setTimeout(cb, 200);
+  };
+  s.onerror = () => {
+    document.getElementById('tvChartContainer').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:400px;color:#6b7280;font-size:13px;flex-direction:column;gap:10px">' +
+      '<span>⚠️ TradingView failed to load</span>' +
+      '<a href="https://www.tradingview.com/chart/?symbol=SPY" target="_blank" style="color:#60a5fa;font-size:12px">Open TradingView in new tab →</a>' +
+      '</div>';
+  };
+  document.head.appendChild(s);
+}
+
+// ─── Init ────────────────────────────────────────────────────────
+loadKeys();
+loadPrices();
+loadNews();
+// Load TradingView after page fully ready
+window.addEventListener('load', () => {
+  loadTVScript(() => buildTVWidget('SPY', '1'));
+});
+loadEconomicCalendar();
+setInterval(loadPrices,60000);
+setInterval(loadNews,180000);
+setInterval(loadEconomicCalendar,600000);
+setInterval(()=>{
+  const now=new Date();
+  updateWindow(now.getHours(),now.getMinutes());
+},30000);
+
+if(location.protocol==='file:'){
+  const w=document.createElement('div');
+  w.style.cssText='background:#f59e0b22;border:1.5px solid #f59e0b;border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:#fbbf24;line-height:1.8';
+  w.innerHTML='⚠️ <b>AI chat needs localhost.</b> In Terminal: <code style="background:#0a0f1a;padding:2px 7px;border-radius:4px">python3 -m http.server 8080</code> → open <a href="http://localhost:8080/clawbot-scalp.html" style="color:#60a5fa">localhost:8080/clawbot-scalp.html</a>';
+  document.body.insertBefore(w,document.body.firstChild);
+}
+</script>
+</body>
+</html>
